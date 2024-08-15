@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Fetching and Processing</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { text-align: center; margin-top: 20px; }
+        .aqhi, .communityAqhi, .purpleair { font-size: 16px; margin-top: 10px; }
+        h1 { font-size: 24px; margin-bottom: 10px; }
+        .legend { text-align: center; margin-top: 10px; }
+        .legend img { width: 85%; max-width: 400px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Edmonton AQHI</h1>
+        <div id="communityAqhi" class="communityAqhi">Loading Community AQHI...</div>
+        <div id="communityReadingDate" class="communityAqhi"></div>
+        <div id="communityForecastToday" class="communityAqhi"></div>
+        <div id="communityForecastTonight" class="communityAqhi"></div>
+        <div id="communityForecastTomorrow" class="communityAqhi"></div>
+
+        <h1>St. Albert</h1>
+        <div id="stalbertAqhi" class="aqhi">Loading AQHI...</div>
+        <div id="stalbertReadingDate" class="aqhi"></div>
+
+        <h1>PurpleAir Sensors</h1>
+        <div id="purpleAirData1" class="purpleair">Loading PurpleAir Data for Sensor 1...</div>
+        <div id="purpleAirData2" class="purpleair">Loading PurpleAir Data for Sensor 2...</div>
+        <div id="purpleAirData3" class="purpleair">Loading PurpleAir Data for Sensor 3...</div>
+    </div>
+
+    <div class="legend">
+        <img src="aqhilegend.png" alt="Legend">
+    </div>
+
+    <iframe src="map.html" id="mapFrame" style="width: 100%; height: 600px;"></iframe>
+    
+
+    <script>
+        // Function to ensure AQHI does not exceed 10
+        function validateAQHI(aqhi) {
+            return Number(aqhi) > 10 ? '10+' : aqhi;
+        }
+        
+        function validateForecast(forecast) {
+            return Number(forecast) > 10 ? '10+' : forecast;
+        }
+        
+
+        function isDataOlderThanTwoHours(timestamp) {
+            const currentTime = new Date();
+            const twoHoursAgo = currentTime.getTime() - (2 * 60 * 60 * 1000);
+            return timestamp < twoHoursAgo;
+        }
+        
+        // Fetch Community AQHI data
+        async function fetchCommunityAQHI() {
+            const url = "https://data.environment.alberta.ca/EdwServices/aqhi/odata/CommunityAqhis?$format=json";
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const edmontonCommunityData = data.value.find(community => community.CommunityName === "Edmonton");
+                if (edmontonCommunityData) {
+                    document.getElementById('communityAqhi').innerText = `AQHI: ${validateAQHI(edmontonCommunityData.Aqhi)}`;
+                    document.getElementById('communityReadingDate').innerText = new Date(edmontonCommunityData.ReadingDate).toLocaleString();
+                    document.getElementById('communityForecastToday').innerText = `Forecast Today: ${validateForecast(edmontonCommunityData.ForecastToday)}`;
+                    document.getElementById('communityForecastTonight').innerText = `Forecast Tonight: ${validateForecast(edmontonCommunityData.ForecastTonight)}`;
+                    document.getElementById('communityForecastTomorrow').innerText = `Forecast Tomorrow: ${validateForecast(edmontonCommunityData.ForecastTomorrow)}`;
+                }
+            } catch (error) {
+                console.error('Error fetching Community AQHI data:', error);
+            }
+        }
+
+        // Fetch St. Albert AQHI data
+        async function fetchStAlbertAQHI() {
+            const url = "https://data.environment.alberta.ca/EdwServices/aqhi/odata/StationAqhis?$format=json";
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const stalbertData = data.value.find(station => station.StationName === "St. Albert");
+                if (stalbertData) {
+                    const validatedAQHI = validateAQHI(stalbertData.Aqhi);
+                    document.getElementById('stalbertAqhi').innerText = `AQHI: ${validatedAQHI}`;
+                    document.getElementById('stalbertReadingDate').innerText = new Date(stalbertData.ReadingDate).toLocaleString();
+                    sendToMap('StAlbert', {...stalbertData, Aqhi: validatedAQHI });
+                }
+            } catch (error) {
+                console.error('Error fetching St. Albert AQHI data:', error);
+            }
+        }
+
+        // Function to fetch and send Edmonton McCauley AQHI data to the map
+        async function fetchMcCauleyAQHI() {
+            const url = "https://data.environment.alberta.ca/EdwServices/aqhi/odata/StationAqhis?$format=json";
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const McCauleyData = data.value.find(station => station.StationName === "Edmonton McCauley");
+                if (McCauleyData) {
+                    const validatedAQHI = validateAQHI(McCauleyData.Aqhi);
+                    sendToMap('McCauley', {...McCauleyData, Aqhi: validatedAQHI });
+                }
+            } catch (error) {
+                console.error('Error fetching McCauley AQHI data:', error);
+            }
+        }
+
+        // Function to fetch and send Edmonton East AQHI data to the map
+        async function fetchEastAQHI() {
+            const url = "https://data.environment.alberta.ca/EdwServices/aqhi/odata/StationAqhis?$format=json";
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const EastData = data.value.find(station => station.StationName === "Edmonton East");
+                if (EastData) {
+                    const validatedAQHI = validateAQHI(EastData.Aqhi);
+                    sendToMap('East', {...EastData, Aqhi: validatedAQHI });
+                }
+            } catch (error) {
+                console.error('Error fetching Edmonton East AQHI data:', error);
+            }
+    }
+
+        // Fetch and process PurpleAir data
+        async function fetchPurpleAirData() {
+            const API_KEY = 'ED3E067C-0904-11ED-8561-42010A800005';
+            const sensorIds = ['53321', '156805', '187769'];         
+            const sensorNames = ['Prince Rupert', 'Klarvatten', 'Akinsdale'];
+            const purpleAirUrl = `https://api.purpleair.com/v1/sensors?fields=last_seen,humidity,pm2.5_60minute,pm2.5_10minute&show_only=${sensorIds.join(',')}`;
+            function adjustPm25(pm25, humidity) {
+                let adjustedPm25 = pm25;
+                if (humidity < 30) {
+                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / 30 - 1));
+                } else if (humidity > 70) {
+                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / 70 - 1));
+                } else {
+                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / humidity - 1));
+                }
+                return adjustedPm25;
+            }
+
+
+            try {
+                const response = await fetch(purpleAirUrl, {
+                    headers: {
+                        'X-API-Key': API_KEY
+                    }
+                });
+                const data = await response.json();
+                data.data.forEach((sensorData, index) => {
+                    const [sensorId, last_seen, humidity, pm2_5_60minute, pm2_5_10minute] = sensorData;
+                    const adjustedTimestamp = new Date(last_seen * 1000);
+        
+                    let adjustedPm25_60minute = "N/A";
+                    let adjustedPm25_10minute = "N/A";
+        
+                    if (!isDataOlderThanTwoHours(adjustedTimestamp.getTime())) {
+                        adjustedPm25_60minute = adjustPm25(pm2_5_60minute, humidity).toFixed(0);
+                        adjustedPm25_10minute = adjustPm25(pm2_5_10minute, humidity).toFixed(0);
+                    }
+        
+                    const sensorName = sensorNames[index];
+        
+                    const purpleAirDataDiv = document.getElementById(`purpleAirData${index + 1}`);
+                    purpleAirDataDiv.innerHTML = `
+                        <p>${sensorName} at ${isNaN(adjustedTimestamp.getTime()) ? 'N/A' : adjustedTimestamp.toLocaleString()}</p>
+                        <p>PM2.5 (past 1hr): ${adjustedPm25_60minute} µg/m³</p>
+                        <p>PM2.5 (past 10min): ${adjustedPm25_10minute} µg/m³</p>
+                    `;
+        
+                    sendToMap('purpleair', {
+                        id: sensorId,
+                        name: sensorName,
+                        lastSeen: adjustedTimestamp.toLocaleString(),
+                        pm25_60: adjustedPm25_60minute,
+                        pm25_10: adjustedPm25_10minute
+                    });
+                });
+            } catch (error) {
+                console.error('Error fetching PurpleAir data:', error);
+            }
+        }
+
+        function sendToMap(type, data) {
+            console.log(`Sending to map: ${type}`, data);  // Log the data being sent
+            const iframe = document.getElementById('mapFrame');
+            iframe.contentWindow.postMessage({ type, data }, '*');
+        }
+
+        window.addEventListener('message', (event) => {
+            if (event.data === 'ready') {
+                fetchCommunityAQHI();
+                fetchStAlbertAQHI();
+                fetchPurpleAirData();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCommunityAQHI();
+            fetchStAlbertAQHI();
+            fetchPurpleAirData();
+            fetchMcCauleyAQHI();
+            fetchEastAQHI();
+        });
+    </script>
+</body>
+</html>
