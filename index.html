@@ -75,7 +75,7 @@
         // Fetch Regina AQHI forecast data
 // Fetch Regina AQHI current observation data
 async function fetchReginaAQHI() {
-    const url = "https://dd.weather.gc.ca/air_quality/aqhi/pnr/observation/realtime/xml/AQ_OBS_HAIMP_CURRENT.xml";
+    const url = "http://dd.weather.gc.ca/air_quality/aqhi/pnr/observation/realtime/xml/AQ_OBS_HAIMP_CURRENT.xml";
     try {
         const response = await fetch(url);
         const xmlData = await response.text();
@@ -96,7 +96,7 @@ async function fetchReginaAQHI() {
 
 // Fetch Regina AQHI forecast data
 async function fetchReginaAQHIForecast() {
-    const url = "https://dd.weather.gc.ca/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_CURRENT.xml";
+    const url = "http://dd.weather.gc.ca/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_CURRENT.xml";
     try {
         const response = await fetch(url);
         const xmlData = await response.text();
