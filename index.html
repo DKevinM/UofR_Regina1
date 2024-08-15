@@ -3,57 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Fetching and Processing</title>
+    <title>Mapping and Displaying Data with Radar</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body { font-family: Arial, sans-serif; }
-        .container { text-align: center; margin-top: 20px; }
-        .aqhi, .communityAqhi, .purpleair { font-size: 16px; margin-top: 10px; }
-        h1 { font-size: 24px; margin-bottom: 10px; }
-        .legend { text-align: center; margin-top: 10px; }
-        .legend img { width: 85%; max-width: 400px; }
+        #map {
+            height: 600px;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="map"></div>
+    <div>
         <h1>Regina AQHI</h1>
         <div id="reginaAqhi" class="aqhi">Loading Regina AQHI...</div>
         <div id="reginaReadingDate" class="aqhi"></div>
         <div id="reginaForecastToday" class="aqhi"></div>
         <div id="reginaForecastTonight" class="aqhi"></div>
         <div id="reginaForecastTomorrow" class="aqhi"></div>
-
-        <h1>PurpleAir Sensors</h1>
-        <div id="purpleAirData1" class="purpleair">Loading PurpleAir Data for Sensor 1...</div>
-        <div id="purpleAirData2" class="purpleair">Loading PurpleAir Data for Sensor 2...</div>
-        <div id="purpleAirData3" class="purpleair">Loading PurpleAir Data for Sensor 3...</div>
-        <div id="purpleAirData4" class="purpleair">Loading PurpleAir Data for Sensor 4...</div>
     </div>
 
-    <div class="legend">
-        <img src="aqhilegend.png" alt="Legend">
-    </div>
-
-    <iframe src="map.html" id="mapFrame" style="width: 100%; height: 600px;"></iframe>
-
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Function to ensure AQHI does not exceed 10
-        function validateAQHI(aqhi) {
-            return Number(aqhi) > 10 ? '10+' : aqhi;
-        }
+        // Initialize the map
+        const map = L.map('map').setView([50.452758, -104.616020], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
 
-        function validateForecast(forecast) {
-            return Number(forecast) > 10 ? '10+' : forecast;
-        }
-
-        function isDataOlderThanTwoHours(timestamp) {
-            const currentTime = new Date();
-            const twoHoursAgo = currentTime.getTime() - (2 * 60 * 60 * 1000);
-            return timestamp < twoHoursAgo;
-        }
+        // CORS Anywhere proxy URL
+        const proxyUrl = "https://cors-anywhere.herokuapp.com/";
 
         // Fetch Regina AQHI current observation data
         async function fetchReginaAQHI() {
-            const url = "https://hpfx.collab.science.gc.ca/today/air_quality/aqhi/pnr/observation/realtime/xml/AQ_OBS_HAIMP_202408152000.xml";
+            const url = proxyUrl + "https://dd.weather.gc.ca/air_quality/aqhi/pnr/observation/realtime/xml/AQ_OBS_HAIMP_CURRENT.xml";
             try {
                 const response = await fetch(url);
                 const xmlData = await response.text();
@@ -73,133 +56,45 @@
         }
 
         // Fetch Regina AQHI forecast data
-// Fetch Regina AQHI current observation data
-async function fetchReginaAQHI() {
-    const url = "https://hpfx.collab.science.gc.ca/today/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_202408151200.xml";
-    try {
-        const response = await fetch(url);
-        const xmlData = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-
-        const aqhiElement = xmlDoc.querySelector("airQualityHealthIndex");
-        const datetimeElement = xmlDoc.querySelector("UTCStamp");
-
-        if (aqhiElement && datetimeElement) {
-            document.getElementById('reginaAqhi').innerText = `AQHI: ${validateAQHI(aqhiElement.textContent)}`;
-            document.getElementById('reginaReadingDate').innerText = new Date(datetimeElement.textContent).toLocaleString();
-        }
-    } catch (error) {
-        console.error('Error fetching Regina AQHI observation data:', error);
-    }
-}
-
-// Fetch Regina AQHI forecast data
-async function fetchReginaAQHIForecast() {
-    const url = "http://dd.weather.gc.ca/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_CURRENT.xml";
-    try {
-        const response = await fetch(url);
-        const xmlData = await response.text();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-
-        const forecastTodayElement = xmlDoc.querySelector('forecast[periodID="1"] airQualityHealthIndex').textContent;
-        const forecastTonightElement = xmlDoc.querySelector('forecast[periodID="2"] airQualityHealthIndex').textContent;
-        const forecastTomorrowElement = xmlDoc.querySelector('forecast[periodID="3"] airQualityHealthIndex').textContent;
-
-        if (forecastTodayElement) {
-            document.getElementById('reginaForecastToday').innerText = `Forecast Today: ${validateForecast(forecastTodayElement.textContent)}`;
-        }
-        if (forecastTonightElement) {
-            document.getElementById('reginaForecastTonight').innerText = `Forecast Tonight: ${validateForecast(forecastTonightElement.textContent)}`;
-        }
-        if (forecastTomorrowElement) {
-            document.getElementById('reginaForecastTomorrow').innerText = `Forecast Tomorrow: ${validateForecast(forecastTomorrowElement.textContent)}`;
-        }
-    } catch (error) {
-        console.error('Error fetching Regina AQHI forecast data:', error);
-    }
-}
-
-
-        // Fetch and process PurpleAir data with updated sensors
-        async function fetchPurpleAirData() {
-            const API_KEY = 'ED3E067C-0904-11ED-8561-42010A800005';
-            const sensorIds = ['152154', '193097', '193110', '218169']; // Updated sensor IDs
-            const sensorNames = ['NE Corner', 'Field 1', 'SW Corner', 'Field 2']; // Updated sensor names
-            const purpleAirUrl = `https://api.purpleair.com/v1/sensors?fields=last_seen,humidity,pm2.5_60minute,pm2.5_10minute&show_only=${sensorIds.join(',')}`;
-
-            function adjustPm25(pm25, humidity) {
-                let adjustedPm25 = pm25;
-                if (humidity < 30) {
-                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / 30 - 1));
-                } else if (humidity > 70) {
-                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / 70 - 1));
-                } else {
-                    adjustedPm25 = pm25 / (1 + 0.24 / (100 / humidity - 1));
-                }
-                return adjustedPm25;
-            }
-
+        async function fetchReginaAQHIForecast() {
+            const url = proxyUrl + "https://dd.weather.gc.ca/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_CURRENT.xml";
             try {
-                const response = await fetch(purpleAirUrl, {
-                    headers: {
-                        'X-API-Key': API_KEY
-                    }
-                });
-                const data = await response.json();
-                data.data.forEach((sensorData, index) => {
-                    const [sensorId, last_seen, humidity, pm2_5_60minute, pm2_5_10minute] = sensorData;
-                    const adjustedTimestamp = new Date(last_seen * 1000);
+                const response = await fetch(url);
+                const xmlData = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
-                    let adjustedPm25_60minute = "N/A";
-                    let adjustedPm25_10minute = "N/A";
+                const forecastTodayElement = xmlDoc.querySelector('forecast[periodID="1"] airQualityHealthIndex').textContent;
+                const forecastTonightElement = xmlDoc.querySelector('forecast[periodID="2"] airQualityHealthIndex').textContent;
+                const forecastTomorrowElement = xmlDoc.querySelector('forecast[periodID="3"] airQualityHealthIndex').textContent;
 
-                    if (!isDataOlderThanTwoHours(adjustedTimestamp.getTime())) {
-                        adjustedPm25_60minute = adjustPm25(pm2_5_60minute, humidity).toFixed(0);
-                        adjustedPm25_10minute = adjustPm25(pm2_5_10minute, humidity).toFixed(0);
-                    }
-
-                    const sensorName = sensorNames[index];
-
-                    const purpleAirDataDiv = document.getElementById(`purpleAirData${index + 1}`);
-                    purpleAirDataDiv.innerHTML = `
-                        <p>${sensorName} at ${isNaN(adjustedTimestamp.getTime()) ? 'N/A' : adjustedTimestamp.toLocaleString()}</p>
-                        <p>PM2.5 (past 1hr): ${adjustedPm25_60minute} µg/m³</p>
-                        <p>PM2.5 (past 10min): ${adjustedPm25_10minute} µg/m³</p>
-                    `;
-
-                    sendToMap('purpleair', {
-                        id: sensorId,
-                        name: sensorName,
-                        lastSeen: adjustedTimestamp.toLocaleString(),
-                        pm25_60: adjustedPm25_60minute,
-                        pm25_10: adjustedPm25_10minute
-                    });
-                });
+                if (forecastTodayElement) {
+                    document.getElementById('reginaForecastToday').innerText = `Forecast Today: ${validateForecast(forecastTodayElement.textContent)}`;
+                }
+                if (forecastTonightElement) {
+                    document.getElementById('reginaForecastTonight').innerText = `Forecast Tonight: ${validateForecast(forecastTonightElement.textContent)}`;
+                }
+                if (forecastTomorrowElement) {
+                    document.getElementById('reginaForecastTomorrow').innerText = `Forecast Tomorrow: ${validateForecast(forecastTomorrowElement.textContent)}`;
+                }
             } catch (error) {
-                console.error('Error fetching PurpleAir data:', error);
+                console.error('Error fetching Regina AQHI forecast data:', error);
             }
         }
 
-        function sendToMap(type, data) {
-            console.log(`Sending to map: ${type}`, data);  // Log the data being sent
-            const iframe = document.getElementById('mapFrame');
-            iframe.contentWindow.postMessage({ type, data }, '*');
+        // Function to ensure AQHI does not exceed 10
+        function validateAQHI(aqhi) {
+            return Number(aqhi) > 10 ? '10+' : aqhi;
         }
 
-        window.addEventListener('message', (event) => {
-            if (event.data === 'ready') {
-                fetchReginaAQHI();
-                fetchReginaAQHIForecast();
-                fetchPurpleAirData();
-            }
-        });
+        function validateForecast(forecast) {
+            return Number(forecast) > 10 ? '10+' : forecast;
+        }
 
+        // Load data when the page loads
         document.addEventListener('DOMContentLoaded', () => {
             fetchReginaAQHI();
             fetchReginaAQHIForecast();
-            fetchPurpleAirData();
         });
     </script>
 </body>
