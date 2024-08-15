@@ -60,8 +60,8 @@
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
-                const aqhiElement = xmlDoc.querySelector("AQHI");
-                const datetimeElement = xmlDoc.querySelector("DATE_PREDICTED");
+                const aqhiElement = xmlDoc.querySelector("airQualityHealthIndex");
+                const datetimeElement = xmlDoc.querySelector("UTCStamp");
 
                 if (aqhiElement && datetimeElement) {
                     document.getElementById('reginaAqhi').innerText = `AQHI: ${validateAQHI(aqhiElement.textContent)}`;
@@ -81,9 +81,9 @@
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
-                const forecastTodayElement = xmlDoc.querySelector("FORECAST_TODAY");
-                const forecastTonightElement = xmlDoc.querySelector("FORECAST_TONIGHT");
-                const forecastTomorrowElement = xmlDoc.querySelector("FORECAST_TOMORROW");
+                const forecastTodayElement = xmlDoc.querySelector('forecast[periodID="1"] airQualityHealthIndex').textContent;
+                const forecastTonightElement = xmlDoc.querySelector('forecast[periodID="2"] airQualityHealthIndex').textContent;
+                const forecastTomorrowElement = xmlDoc.querySelector('forecast[periodID="3"] airQualityHealthIndex').textContent;
 
                 if (forecastTodayElement) {
                     document.getElementById('reginaForecastToday').innerText = `Forecast Today: ${validateForecast(forecastTodayElement.textContent)}`;
