@@ -40,17 +40,6 @@
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${site}<br><b>AQHI:</b> ${aqhi}<br><b>Date:</b> ${date}`);
 
-        // Add radar layer from ECCC
-        const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
-            layers: 'RADAR_1KM_RRAI',
-            format: 'image/png',
-            transparent: true,
-            time: 'your-latest-time',  // Insert the latest time retrieved from the capabilities response
-            style: 'your-desired-style',  // Insert the style you prefer from the GetCapabilities response
-            attribution: '&copy; Environment and Climate Change Canada'
-        });
-        
-        radarLayer.addTo(map);
 
         // Add PurpleAir sensor to the map
         function addPurpleAirSensor(lat, lng, pm25, name, date) {
