@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapping and Displaying Data</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        .aqhi-label {
+            color: black;
+            background: transparent;
+            text-align: center;
+            line-height: 1;
+            border-radius: 50%;
+        }
+        .purpleair-label {
+            font-size: 12px;
+        }
+        .nowrap {
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map').setView([50.452758, -104.616020], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // Add PurpleAir sensor to the map
+        function addPurpleAirSensor(lat, lng, pm25, name, date) {
+            const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' : pm25 <= 30 ? 'blue' : pm25 <= 60 ? 'orange' : pm25 <= 100 ? 'red' : 'brown';
+            L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                radius: 200
+            }).addTo(map)
+            .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
+ 
+            const icon = L.divIcon({
+                className: 'aqhi-label purpleair-label',
+                html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
+                iconSize: [40, 40],
+                iconAnchor: [15, 15]
+            });
+
+            L.marker([lat, lng], {icon: icon}).addTo(map);
+        }
+        
+        window.addEventListener('message', (event) => {
+            const { type, data } = event.data;
+            if (type === 'purpleair') {
+                const sensorLocations = {
+                    '152154': {coords: [50.451645, -104.63257], name: 'NE Corner'},
+                    '193097': {coords: [50.4512, -104.6333], name: 'Field 1'},
+                    '193110': {coords: [50.44997, -104.63419], name: 'SW Corner'},
+                    '218169': {coords: [50.45109, -104.63352], name: 'Field 2'}
+                };
+
+                const sensor = sensorLocations[data.id];
+                if (sensor && sensor.name === data.name) {
+                    addPurpleAirSensor(sensor.coords[0], sensor.coords[1], data.pm25_60, data.name, data.lastSeen);
+                } else {
+                    console.error('Invalid sensor ID or name mismatch:', data.id, data.name);
+                }
+            }
+        });
+
+        window.onload = () => {
+            window.parent.postMessage('ready', '*');
+        };
+    </script>
+</body>
+</html>
