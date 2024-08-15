@@ -3,25 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping and Displaying Data</title>
+    <title>Mapping and Displaying Data with Radar</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map {
             height: 600px;
             width: 100%;
-        }
-        .aqhi-label {
-            color: black;
-            background: transparent;
-            text-align: center;
-            line-height: 1;
-            border-radius: 50%;
-        }
-        .purpleair-label {
-            font-size: 12px;
-        }
-        .nowrap {
-            white-space: nowrap;
         }
     </style>
 </head>
@@ -35,6 +22,18 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
+        // Add radar layer from ECCC
+        const radarLayer = L.tileLayer(
+            'https://geo.weather.gc.ca/geomet/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=RADAR_1KM_RRAI&STYLE=default&FORMAT=image/png&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+            {
+                tileSize: 256,
+                opacity: 0.5, // Adjust the opacity to allow visibility of the base map beneath
+                attribution: '&copy; Environment and Climate Change Canada'
+            }
+        );
+
+        radarLayer.addTo(map);
 
         // Add PurpleAir sensor to the map
         function addPurpleAirSensor(lat, lng, pm25, name, date) {
