@@ -3,12 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping and Displaying Data with Radar</title>
+    <title>Mapping and Displaying Data</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map {
             height: 600px;
             width: 100%;
+        }
+        .purpleair-label {
+            font-size: 12px; /* Smaller font size for PurpleAir */
+        }
+        .nowrap {
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -22,6 +28,17 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
+
+        // Add a station to the map
+        function addStationToMap(lat, lng, aqhi, site, date) {
+            const color = aqhi <= 3 ? 'blue' : aqhi <= 6 ? 'orange' : aqhi <= 10 ? 'red' : 'brown';
+            L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                radius: 400
+            }).addTo(map)
+            .bindPopup(`<b>Site:</b> ${site}<br><b>AQHI:</b> ${aqhi}<br><b>Date:</b> ${date}`);
 
         // Add radar layer from ECCC
         const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
