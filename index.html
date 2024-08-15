@@ -64,6 +64,8 @@
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
+                console.log(xmlDoc); // Log the entire XML document to inspect the structure
+
                 const forecastTodayElement = xmlDoc.querySelector('forecast[periodID="1"] airQualityHealthIndex').textContent;
                 const forecastTonightElement = xmlDoc.querySelector('forecast[periodID="2"] airQualityHealthIndex').textContent;
                 const forecastTomorrowElement = xmlDoc.querySelector('forecast[periodID="3"] airQualityHealthIndex').textContent;
