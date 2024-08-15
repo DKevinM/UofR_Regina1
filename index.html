@@ -44,11 +44,16 @@
                 const xmlDoc = parser.parseFromString(xmlData, "text/xml");
 
                 const aqhiElement = xmlDoc.querySelector("airQualityHealthIndex");
-                const datetimeElement = xmlDoc.querySelector("UTCStamp");
+                const utcStampElement = xmlDoc.querySelector("UTCStamp");
 
-                if (aqhiElement && datetimeElement) {
-                    document.getElementById('reginaAqhi').innerText = `AQHI: ${validateAQHI(aqhiElement.textContent)}`;
-                    document.getElementById('reginaReadingDate').innerText = new Date(datetimeElement.textContent).toLocaleString();
+                if (aqhiElement && utcStampElement) {
+                    const aqhiValue = aqhiElement.textContent;
+                    const utcStampValue = utcStampElement.textContent;
+        
+                    document.getElementById('reginaAqhi').innerText = `AQHI: ${validateAQHI(aqhiValue)}`;
+                    document.getElementById('reginaReadingDate').innerText = `Timestamp: ${formatUTC(utcStampValue)}`;
+                } else {
+                    console.error('Could not find AQHI or UTCStamp elements in the XML.');
                 }
             } catch (error) {
                 console.error('Error fetching Regina AQHI observation data:', error);
