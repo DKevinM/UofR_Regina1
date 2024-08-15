@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping and Displaying Data with Radar</title>
+    <title>Leaflet Map with Radar Layer</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map {
@@ -14,80 +14,14 @@
 </head>
 <body>
     <div id="map"></div>
-    <div>
-        <h1>Regina AQHI</h1>
-        <div id="reginaAqhi" class="aqhi">Loading Regina AQHI...</div>
-        <div id="reginaReadingDate" class="aqhi"></div>
-        <div id="reginaForecastToday" class="aqhi"></div>
-        <div id="reginaForecastTonight" class="aqhi"></div>
-        <div id="reginaForecastTomorrow" class="aqhi"></div>
-    </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
-        const map = L.map('map').setView([50.452758, -104.616020], 13);
+        // Initialize the map centered on Regina
+        const map = L.map('map').setView([50.452758, -104.616020], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
-        // CORS Anywhere proxy URL
-        const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-
-        // Fetch Regina AQHI current observation data
-        async function fetchReginaAQHI() {
-            const url = proxyUrl + "https://dd.weather.gc.ca/air_quality/aqhi/pnr/observation/realtime/xml/AQ_OBS_HAIMP_CURRENT.xml";
-            try {
-                const response = await fetch(url);
-                const xmlData = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-
-                const aqhiElement = xmlDoc.querySelector("airQualityHealthIndex");
-                const utcStampElement = xmlDoc.querySelector("UTCStamp");
-
-                if (aqhiElement && utcStampElement) {
-                    const aqhiValue = aqhiElement.textContent;
-                    const utcStampValue = utcStampElement.textContent;
-        
-                    document.getElementById('reginaAqhi').innerText = `AQHI: ${validateAQHI(aqhiValue)}`;
-                    document.getElementById('reginaReadingDate').innerText = `Timestamp: ${formatUTC(utcStampValue)}`;
-                } else {
-                    console.error('Could not find AQHI or UTCStamp elements in the XML.');
-                }
-            } catch (error) {
-                console.error('Error fetching Regina AQHI observation data:', error);
-            }
-        }
-
-        // Fetch Regina AQHI forecast data
-        async function fetchReginaAQHIForecast() {
-            const url = proxyUrl + "https://dd.weather.gc.ca/air_quality/aqhi/pnr/forecast/realtime/xml/AQ_FCST_HAIMP_CURRENT.xml";
-            try {
-                const response = await fetch(url);
-                const xmlData = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlData, "text/xml");
-
-                console.log(xmlDoc); // Log the entire XML document to inspect the structure
-
-                const forecastTodayElement = xmlDoc.querySelector('forecast[periodID="1"] airQualityHealthIndex').textContent;
-                const forecastTonightElement = xmlDoc.querySelector('forecast[periodID="2"] airQualityHealthIndex').textContent;
-                const forecastTomorrowElement = xmlDoc.querySelector('forecast[periodID="3"] airQualityHealthIndex').textContent;
-
-                if (forecastTodayElement) {
-                    document.getElementById('reginaForecastToday').innerText = `Forecast Today: ${validateForecast(forecastTodayElement.textContent)}`;
-                }
-                if (forecastTonightElement) {
-                    document.getElementById('reginaForecastTonight').innerText = `Forecast Tonight: ${validateForecast(forecastTonightElement.textContent)}`;
-                }
-                if (forecastTomorrowElement) {
-                    document.getElementById('reginaForecastTomorrow').innerText = `Forecast Tomorrow: ${validateForecast(forecastTomorrowElement.textContent)}`;
-                }
-            } catch (error) {
-                console.error('Error fetching Regina AQHI forecast data:', error);
-            }
-        }
 
         // Fetch radar start, end, and default time from the GetCapabilities request
         async function getRadarTimes() {
@@ -106,7 +40,7 @@
             }
         }
 
-        // Adding radar layer
+        // Add the radar layer to the map
         async function addRadarLayer() {
             const [startTime, endTime, defaultTime] = await getRadarTimes();
             if (defaultTime) {
@@ -121,20 +55,9 @@
             }
         }
 
-        // Function to ensure AQHI does not exceed 10
-        function validateAQHI(aqhi) {
-            return Number(aqhi) > 10 ? '10+' : aqhi;
-        }
-
-        function validateForecast(forecast) {
-            return Number(forecast) > 10 ? '10+' : forecast;
-        }
-
-        // Load data when the page loads
+        // Load the radar layer when the page loads
         document.addEventListener('DOMContentLoaded', () => {
-            fetchReginaAQHI();
-            fetchReginaAQHIForecast();
-            addRadarLayer(); // Add the radar layer when the page loads
+            addRadarLayer();
         });
     </script>
 </body>
