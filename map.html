@@ -16,10 +16,26 @@
         .nowrap {
             white-space: nowrap;
         }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            padding: 10px;
+            border: 2px solid #444;
+            border-radius: 5px;
+        }
+        .legend img {
+            width: 150px;
+        }
     </style>
 </head>
 <body>
     <div id="map"></div>
+
+    <div class="legend">
+        <img src="aqhilegend.png" alt="AQHI Legend">
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
@@ -29,14 +45,15 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Adding the radar layer to the map
+        // Add the radar layer
         async function addRadarLayer() {
             const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
                 layers: 'RADAR_1KM_RRAI',
                 format: 'image/png',
                 transparent: true,
                 attribution: '&copy; Environment and Climate Change Canada'
-            }).addTo(map);
+            });
+            radarLayer.addTo(map);
         }
 
         // Function to add a PurpleAir sensor to the map
@@ -52,7 +69,7 @@
             L.circle([lat, lng], {
                 color: color,
                 fillColor: color,
-                fillOpacity: 0.2,
+                fillOpacity: 0.4,
                 radius: 200
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
@@ -62,7 +79,7 @@
                 className: 'purpleair-label',
                 html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
                 iconSize: [40, 40],
-                iconAnchor: [15, 15]
+                iconAnchor: [20, 20]
             });
 
             // Add the marker to the map
