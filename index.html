@@ -6,19 +6,9 @@
     <title>Mapping and Displaying Data</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
         #map {
             height: 600px;
             width: 100%;
-            margin-bottom: 20px;
-        }
-        .content-container {
-            padding: 20px;
-            text-align: center;
         }
         .purpleair-label {
             font-size: 12px; /* Smaller font size for PurpleAir */
@@ -26,25 +16,25 @@
         .nowrap {
             white-space: nowrap;
         }
+        .legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: white;
+            padding: 10px;
+            border: 2px solid #444;
+            border-radius: 5px;
+        }
         .legend img {
-            width: 85%;
-            max-width: 400px;
+            width: 150px;
         }
     </style>
 </head>
 <body>
     <div id="map"></div>
 
-    <div class="content-container">
-        <h1>PurpleAir Sensors</h1>
-        <div id="purpleAirData1" class="purpleair">Loading PurpleAir Data for Sensor 1...</div>
-        <div id="purpleAirData2" class="purpleair">Loading PurpleAir Data for Sensor 2...</div>
-        <div id="purpleAirData3" class="purpleair">Loading PurpleAir Data for Sensor 3...</div>
-        <div id="purpleAirData4" class="purpleair">Loading PurpleAir Data for Sensor 4...</div>
-    </div>
-
     <div class="legend">
-        <img src="https://geo.weather.gc.ca/geomet?service=WMS&version=1.3.0&request=GetLegendGraphic&layer=RADAR_1KM_RRAI&format=image/png" alt="Radar Legend">
+        <img src="aqhilegend.png" alt="AQHI Legend">
     </div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -54,37 +44,6 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
-
-        // Adding radar layer
-        async function getRadarTimes() {
-            const url = 'https://geo.weather.gc.ca/geomet/?lang=en&service=WMS&request=GetCapabilities&version=1.3.0&LAYERS=RADAR_1KM_RRAI&t=' + new Date().getTime();
-            try {
-                const response = await fetch(url);
-                const xmlData = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
-                const [start, end] = xmlDoc.getElementsByTagName('Dimension')[0].textContent.split('/');
-                const defaultTime = xmlDoc.getElementsByTagName('Dimension')[0].getAttribute('default');
-                return [new Date(start), new Date(end), new Date(defaultTime)];
-            } catch (error) {
-                console.error('Error fetching radar times:', error);
-                return [null, null, null];
-            }
-        }
-
-        async function addRadarLayer() {
-            const [startTime, endTime, defaultTime] = await getRadarTimes();
-            if (defaultTime) {
-                const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
-                    layers: 'RADAR_1KM_RRAI',
-                    format: 'image/png',
-                    transparent: true,
-                    time: defaultTime.toISOString().split('.')[0] + "Z",
-                    attribution: '&copy; Environment and Climate Change Canada'
-                });
-                radarLayer.addTo(map);
-            }
-        }
 
         function isDataOlderThanTwoHours(timestamp) {
             const currentTime = new Date();
@@ -139,35 +98,47 @@
                         <p>PM2.5 (past 10min): ${adjustedPm25_10minute} µg/m³</p>
                     `;
 
-                    sendToMap('purpleair', {
-                        id: sensorId,
-                        name: sensorName,
-                        lastSeen: adjustedTimestamp.toLocaleString(),
-                        pm25_60: adjustedPm25_60minute,
-                        pm25_10: adjustedPm25_10minute
-                    });
+                    // Add the sensor to the map
+                    addPurpleAirSensor(sensorName, adjustedPm25_60minute, adjustedTimestamp.toLocaleString(), sensorLocations[sensorId].coords);
                 });
             } catch (error) {
                 console.error('Error fetching PurpleAir data:', error);
             }
         }
 
-        function sendToMap(type, data) {
-            console.log(`Sending to map: ${type}`, data);  // Log the data being sent
-            const iframe = document.getElementById('mapFrame');
-            iframe.contentWindow.postMessage({ type, data }, '*');
+        // Function to add a PurpleAir sensor to the map
+        function addPurpleAirSensor(name, pm25, date, coords) {
+            // Determine the color of the marker based on PM2.5 levels
+            const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' :
+                          pm25 <= 30 ? 'blue' :
+                          pm25 <= 60 ? 'orange' :
+                          pm25 <= 100 ? 'red' :
+                          'brown';
+                          
+            // Add a circle to represent the sensor location
+            L.circle(coords, {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.4,
+                radius: 200
+            }).addTo(map)
+            .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
+ 
+            // Create a custom icon for the marker
+            const icon = L.divIcon({
+                className: 'purpleair-label',
+                html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            // Add the marker to the map
+            L.marker(coords, {icon: icon}).addTo(map);
         }
 
-        window.addEventListener('message', (event) => {
-            if (event.data === 'ready') {
-                fetchPurpleAirData();
-                addRadarLayer(); // Add the radar layer when the page loads
-            }
-        });
-
+        // Fetch PurpleAir data on page load
         document.addEventListener('DOMContentLoaded', () => {
             fetchPurpleAirData();
-            addRadarLayer(); // Add the radar layer when the page loads
         });
     </script>
 </body>
