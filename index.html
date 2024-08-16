@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapping and Displaying Data</title>
+    <title>Mapping and Displaying PurpleAir Data</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map {
@@ -56,6 +56,12 @@
             const API_KEY = 'ED3E067C-0904-11ED-8561-42010A800005';
             const sensorIds = ['152154', '193097', '193110', '218169']; // Updated sensor IDs
             const sensorNames = ['NE Corner', 'Field 1', 'SW Corner', 'Field 2']; // Updated sensor names
+            const sensorLocations = {
+                '152154': [50.451645, -104.63257],
+                '193097': [50.4512, -104.6333],
+                '193110': [50.44997, -104.63419],
+                '218169': [50.45109, -104.63352]
+            };
             const purpleAirUrl = `https://api.purpleair.com/v1/sensors?fields=last_seen,humidity,pm2.5_60minute,pm2.5_10minute&show_only=${sensorIds.join(',')}`;
 
             function adjustPm25(pm25, humidity) {
@@ -90,16 +96,10 @@
                     }
 
                     const sensorName = sensorNames[index];
-
-                    const purpleAirDataDiv = document.getElementById(`purpleAirData${index + 1}`);
-                    purpleAirDataDiv.innerHTML = `
-                        <p>${sensorName} at ${isNaN(adjustedTimestamp.getTime()) ? 'N/A' : adjustedTimestamp.toLocaleString()}</p>
-                        <p>PM2.5 (past 1hr): ${adjustedPm25_60minute} µg/m³</p>
-                        <p>PM2.5 (past 10min): ${adjustedPm25_10minute} µg/m³</p>
-                    `;
+                    const coords = sensorLocations[sensorId];
 
                     // Add the sensor to the map
-                    addPurpleAirSensor(sensorName, adjustedPm25_60minute, adjustedTimestamp.toLocaleString(), sensorLocations[sensorId].coords);
+                    addPurpleAirSensor(sensorName, adjustedPm25_60minute, adjustedTimestamp.toLocaleString(), coords);
                 });
             } catch (error) {
                 console.error('Error fetching PurpleAir data:', error);
@@ -108,14 +108,12 @@
 
         // Function to add a PurpleAir sensor to the map
         function addPurpleAirSensor(name, pm25, date, coords) {
-            // Determine the color of the marker based on PM2.5 levels
             const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' :
                           pm25 <= 30 ? 'blue' :
                           pm25 <= 60 ? 'orange' :
                           pm25 <= 100 ? 'red' :
                           'brown';
-                          
-            // Add a circle to represent the sensor location
+
             L.circle(coords, {
                 color: color,
                 fillColor: color,
@@ -123,8 +121,7 @@
                 radius: 200
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
- 
-            // Create a custom icon for the marker
+
             const icon = L.divIcon({
                 className: 'purpleair-label',
                 html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
@@ -132,11 +129,9 @@
                 iconAnchor: [20, 20]
             });
 
-            // Add the marker to the map
             L.marker(coords, {icon: icon}).addTo(map);
         }
 
-        // Fetch PurpleAir data on page load
         document.addEventListener('DOMContentLoaded', () => {
             fetchPurpleAirData();
         });
