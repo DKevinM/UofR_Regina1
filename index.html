@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaflet Map with Radar Layer</title>
+    <title>Mapping and Displaying Data with Radar</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #map {
@@ -17,48 +17,67 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize the map centered on Regina
-        const map = L.map('map').setView([50.452758, -104.616020], 8);
+        // Initialize the map
+        const map = L.map('map').setView([50.452758, -104.616020], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Fetch radar start, end, and default time from the GetCapabilities request
-        async function getRadarTimes() {
-            const url = 'https://geo.weather.gc.ca/geomet/?lang=en&service=WMS&request=GetCapabilities&version=1.3.0&LAYERS=RADAR_1KM_RRAI&t=' + new Date().getTime();
-            try {
-                const response = await fetch(url);
-                const xmlData = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlData, 'text/xml');
-                const [start, end] = xmlDoc.getElementsByTagName('Dimension')[0].textContent.split('/');
-                const defaultTime = xmlDoc.getElementsByTagName('Dimension')[0].getAttribute('default');
-                return [new Date(start), new Date(end), new Date(defaultTime)];
-            } catch (error) {
-                console.error('Error fetching radar times:', error);
-                return [null, null, null];
+        // Add radar layer from ECCC
+        const radarLayer = L.tileLayer(
+            'https://geo.weather.gc.ca/geomet/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=RADAR_1KM_RRAI&STYLE=default&FORMAT=image/png&TILEMATRIXSET=GoogleMapsCompatible&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+            {
+                tileSize: 256,
+                opacity: 0.5, // Adjust the opacity to allow visibility of the base map beneath
+                attribution: '&copy; Environment and Climate Change Canada'
             }
-        }
+        );
 
-        // Add the radar layer to the map
-        async function addRadarLayer() {
-            const [startTime, endTime, defaultTime] = await getRadarTimes();
-            if (defaultTime) {
-                const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
-                    layers: 'RADAR_1KM_RRAI',
-                    format: 'image/png',
-                    transparent: true,
-                    time: defaultTime.toISOString().split('.')[0] + "Z", // Set the time to the default from GetCapabilities
-                    attribution: '&copy; Environment and Climate Change Canada'
-                });
-                radarLayer.addTo(map);
+        radarLayer.addTo(map);
+
+        // Add PurpleAir sensor to the map
+        function addPurpleAirSensor(lat, lng, pm25, name, date) {
+            const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' : pm25 <= 30 ? 'blue' : pm25 <= 60 ? 'orange' : pm25 <= 100 ? 'red' : 'brown';
+            L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.2,
+                radius: 200
+            }).addTo(map)
+            .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
+ 
+            const icon = L.divIcon({
+                className: 'aqhi-label purpleair-label',
+                html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
+                iconSize: [40, 40],
+                iconAnchor: [15, 15]
+            });
+
+            L.marker([lat, lng], {icon: icon}).addTo(map);
+        }
+        
+        window.addEventListener('message', (event) => {
+            const { type, data } = event.data;
+            if (type === 'purpleair') {
+                const sensorLocations = {
+                    '152154': {coords: [50.451645, -104.63257], name: 'NE Corner'},
+                    '193097': {coords: [50.4512, -104.6333], name: 'Field 1'},
+                    '193110': {coords: [50.44997, -104.63419], name: 'SW Corner'},
+                    '218169': {coords: [50.45109, -104.63352], name: 'Field 2'}
+                };
+
+                const sensor = sensorLocations[data.id];
+                if (sensor && sensor.name === data.name) {
+                    addPurpleAirSensor(sensor.coords[0], sensor.coords[1], data.pm25_60, data.name, data.lastSeen);
+                } else {
+                    console.error('Invalid sensor ID or name mismatch:', data.id, data.name);
+                }
             }
-        }
-
-        // Load the radar layer when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            addRadarLayer();
         });
+
+        window.onload = () => {
+            window.parent.postMessage('ready', '*');
+        };
     </script>
 </body>
 </html>
