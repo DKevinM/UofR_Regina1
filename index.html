@@ -159,7 +159,7 @@
         function addPurpleAirSensor(name, pm25, date, coords) {
             const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' :
                           pm25 <= 30 ? 'blue' :
-                          pm25 <= 60 ? 'orange' :
+                          pm25 <= 70 ? 'orange' :
                           pm25 <= 100 ? 'red' :
                           'brown';
 
@@ -167,7 +167,7 @@
                 color: color,
                 fillColor: color,
                 fillOpacity: 0.6,
-                radius: 12 // Dynamic resizing based on zoom with smaller dots
+                radius: 15 // Dynamic resizing based on zoom with smaller dots
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
 
