@@ -11,14 +11,14 @@
             width: 100%;
         }
         .purpleair-label {
-            font-size: 10px; /* Smaller font size for PurpleAir */
+            font-size: 10px;
         }
         .nowrap {
             white-space: nowrap;
         }
         .legend {
             position: absolute;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             background-color: white;
             padding: 10px;
@@ -26,7 +26,7 @@
             border-radius: 5px;
         }
         .legend img {
-            width: 250px; /* Increased size of the legend image */
+            width: 300px;
         }
         .container {
             margin-top: 20px;
@@ -76,8 +76,8 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize the map centered on Regina
-        const map = L.map('map').setView([50.452758, -104.616020], 13);
+        // Initialize the map centered on Regina with closer zoom
+        const map = L.map('map', { preferCanvas: true }).setView([50.452758, -104.616020], 15); // Zoom level set to 15 for closer view
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
@@ -164,15 +164,15 @@
                 color: color,
                 fillColor: color,
                 fillOpacity: 0.4,
-                radius: 100 // Reduced the radius for smaller dots
+                radius: 50 // Further reduced the radius for smaller dots
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
 
             const icon = L.divIcon({
                 className: 'purpleair-label',
                 html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
-                iconSize: [30, 30], // Reduced icon size for smaller labels
-                iconAnchor: [15, 15]
+                iconSize: [20, 20], // Smaller icon size for labels
+                iconAnchor: [10, 10]
             });
 
             L.marker(coords, {icon: icon}).addTo(map);
