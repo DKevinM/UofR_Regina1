@@ -29,6 +29,16 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
+        // Adding the radar layer to the map
+        async function addRadarLayer() {
+            const radarLayer = L.tileLayer.wms('https://geo.weather.gc.ca/geomet', {
+                layers: 'RADAR_1KM_RRAI',
+                format: 'image/png',
+                transparent: true,
+                attribution: '&copy; Environment and Climate Change Canada'
+            }).addTo(map);
+        }
+
         // Function to add a PurpleAir sensor to the map
         function addPurpleAirSensor(lat, lng, pm25, name, date) {
             // Determine the color of the marker based on PM2.5 levels
@@ -58,7 +68,7 @@
             // Add the marker to the map
             L.marker([lat, lng], {icon: icon}).addTo(map);
         }
-        
+
         // Listen for messages sent to this map iframe
         window.addEventListener('message', (event) => {
             const { type, data } = event.data;
@@ -84,6 +94,7 @@
         // Notify the parent window when the map is ready to receive data
         window.onload = () => {
             window.parent.postMessage('ready', '*');
+            addRadarLayer(); // Add radar layer when the map loads
         };
     </script>
 </body>
