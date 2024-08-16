@@ -23,27 +23,22 @@
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
-        // Initialize the map
+        // Initialize the map centered on Regina
         const map = L.map('map').setView([50.452758, -104.616020], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Add a station to the map
-        function addStationToMap(lat, lng, aqhi, site, date) {
-            const color = aqhi <= 3 ? 'blue' : aqhi <= 6 ? 'orange' : aqhi <= 10 ? 'red' : 'brown';
-            L.circle([lat, lng], {
-                color: color,
-                fillColor: color,
-                fillOpacity: 0.2,
-                radius: 400
-            }).addTo(map)
-            .bindPopup(`<b>Site:</b> ${site}<br><b>AQHI:</b> ${aqhi}<br><b>Date:</b> ${date}`);
-
-
-        // Add PurpleAir sensor to the map
+        // Function to add a PurpleAir sensor to the map
         function addPurpleAirSensor(lat, lng, pm25, name, date) {
-            const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' : pm25 <= 30 ? 'blue' : pm25 <= 60 ? 'orange' : pm25 <= 100 ? 'red' : 'brown';
+            // Determine the color of the marker based on PM2.5 levels
+            const color = pm25 == null || pm25 === '' || isNaN(Number(pm25)) ? 'gray' :
+                          pm25 <= 30 ? 'blue' :
+                          pm25 <= 60 ? 'orange' :
+                          pm25 <= 100 ? 'red' :
+                          'brown';
+                          
+            // Add a circle to represent the sensor location
             L.circle([lat, lng], {
                 color: color,
                 fillColor: color,
@@ -52,19 +47,23 @@
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
  
+            // Create a custom icon for the marker
             const icon = L.divIcon({
-                className: 'aqhi-label purpleair-label',
+                className: 'purpleair-label',
                 html: `<span class="nowrap">${pm25}&nbsp;µg/m³</span>`,
                 iconSize: [40, 40],
                 iconAnchor: [15, 15]
             });
 
+            // Add the marker to the map
             L.marker([lat, lng], {icon: icon}).addTo(map);
         }
         
+        // Listen for messages sent to this map iframe
         window.addEventListener('message', (event) => {
             const { type, data } = event.data;
             if (type === 'purpleair') {
+                // Predefined sensor locations and names
                 const sensorLocations = {
                     '152154': {coords: [50.451645, -104.63257], name: 'NE Corner'},
                     '193097': {coords: [50.4512, -104.6333], name: 'Field 1'},
@@ -72,6 +71,7 @@
                     '218169': {coords: [50.45109, -104.63352], name: 'Field 2'}
                 };
 
+                // Match the sensor ID with its location and name
                 const sensor = sensorLocations[data.id];
                 if (sensor && sensor.name === data.name) {
                     addPurpleAirSensor(sensor.coords[0], sensor.coords[1], data.pm25_60, data.name, data.lastSeen);
@@ -81,6 +81,7 @@
             }
         });
 
+        // Notify the parent window when the map is ready to receive data
         window.onload = () => {
             window.parent.postMessage('ready', '*');
         };
