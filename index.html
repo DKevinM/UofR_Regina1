@@ -61,7 +61,6 @@
 
     <div class="container">
         <div class="table-container">
-            <h1>PurpleAir Sensors</h1>
             <table>
                 <thead>
                     <tr>
@@ -167,8 +166,8 @@
             L.circleMarker(coords, {
                 color: color,
                 fillColor: color,
-                fillOpacity: 0.7,
-                radius: 8 // Dynamic resizing based on zoom with smaller dots
+                fillOpacity: 0.6,
+                radius: 12 // Dynamic resizing based on zoom with smaller dots
             }).addTo(map)
             .bindPopup(`<b>Site:</b> ${name}<br><b>PM2.5 (past 1hr):</b> <span class="nowrap">${pm25}&nbsp;µg/m³</span><br><b>Date:</b> ${date}`);
 
