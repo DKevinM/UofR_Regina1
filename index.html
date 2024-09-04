@@ -191,7 +191,7 @@
 
         // Fetch the latest observation data
         async function getLatestObservation() {
-            const baseUrl = "http://hpfx.collab.science.gc.ca";
+            const baseUrl = "https://hpfx.collab.science.gc.ca";
             const locationId = "Regina";
             const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
             const currentHour = new Date().getUTCHours().toString().padStart(2, '0');
@@ -215,7 +215,7 @@
 
         // Fetch the latest forecast data
         async function getLatestForecast() {
-            const baseUrl = "http://hpfx.collab.science.gc.ca";
+            const baseUrl = "https://hpfx.collab.science.gc.ca";
             const locationId = "Regina";
             const currentDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
             const futureHour = new Date(new Date().setUTCHours(new Date().getUTCHours() + 6)).getUTCHours().toString().padStart(2, '0');
